@@ -2,6 +2,8 @@ Simple IPTV player for sources in m3u files.\
 TVOK. Version 0.6.0 (2019.12.18). By Oleg Kochkin. License GPL.\
 Worked on GNU/Linux Fedora 31.
 
+![Example](https://i111.fastpic.ru/big/2019/1218/74/a77775f073a98b85ba62a3bfd777c474.jpg)
+
 Capabilities:
 
  - Written in Python
