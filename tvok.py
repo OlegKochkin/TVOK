@@ -51,7 +51,7 @@ class MainWindow(QMainWindow):
 # Main window settings    
 		self.widget = QWidget(self)
 		self.setCentralWidget(self.widget)
-		self.setWindowIcon(QIcon(scriptDir+os.path.sep+'logo.png'))
+		self.setWindowIcon(QIcon(scriptDir+os.path.sep+'pics'+os.path.sep+'logo.png'))
 		self.resize(cfg.value('Width',456,type=int),cfg.value('Height',256,type=int))
 		self.setGeometry(cfg.value('Left',456,type=int)+WINDOW_DECORATION_WIDTH_BORDER,
 										cfg.value('Top',256,type=int)+WINDOW_DECORATION_HEIGHT_TITLE,
@@ -103,8 +103,8 @@ class MainWindow(QMainWindow):
 		self.chChange()
 
 	def swapIcon(self):
-		picture = scriptDir+os.path.sep+'pics/din-on.png'
-		if not self.mute(): picture = scriptDir+os.path.sep+'pics/din-off.png'
+		picture = scriptDir+os.path.sep+'pics'+os.path.sep+'din-on.png'
+		if not self.mute(): picture = scriptDir+os.path.sep+'pics'+os.path.sep+'din-off.png'
 		self.trayIcon.setIcon (QIcon (picture))
 		self.trayIcon.show()
 
