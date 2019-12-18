@@ -1,5 +1,5 @@
-Simple IPTV player for sources in m3u files.
-TVOK. Version 0.6.0 (2019.12.18). By Oleg Kochkin. License GPL.
+Simple IPTV player for sources in m3u files.\
+TVOK. Version 0.6.0 (2019.12.18). By Oleg Kochkin. License GPL.\
 Worked on GNU/Linux Fedora 31.
 
 Capabilities:
@@ -13,11 +13,12 @@ Capabilities:
  - Remember the last selected channel number and window geometry in the configuration file.
  - Uses DBUS for external control, scripts or a remote control.
 
- All DBUS calls can be made using qdbus utility:
+ All DBUS calls can be made using qdbus utility:\
   "qdbus tv.ok / method parameters"
 
  DBUS methods:
- 
+
+```
  channelNum DIGIT
   DIGIT - 0...9
    Press numbers to select a channel.
@@ -65,3 +66,4 @@ Capabilities:
 
  ToggleFullScreen
    Toggle full screen
+```
