@@ -4,10 +4,10 @@
 # TVOK. Version 0.6.0 (2019.12.18). By Oleg Kochkin. License GPL.
 
 import sys, vlc, os
-from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QMenu, QAction, QLabel, QSystemTrayIcon
+from PyQt5.QtWidgets import QApplication,QWidget,QMainWindow,QMenu,QAction,QLabel,QSystemTrayIcon,QFrame,QGridLayout,QBoxLayout
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import QSettings, Qt, pyqtSlot, QTimer
-from PyQt5.QtDBus import QDBusConnection, QDBusMessage, QDBusInterface, QDBusReply
+from PyQt5.QtDBus import QDBusConnection, QDBusMessage, QDBusInterface, QDBusReply, QDBus
 
 WINDOW_DECORATION_HEIGHT_TITLE = 25
 WINDOW_DECORATION_WIDTH_BORDER = 4
@@ -16,7 +16,7 @@ VOLUME_CHANGE=5
 # Get folder with script
 scriptDir = os.path.dirname(os.path.realpath(__file__))
 # Config file init 
-cfg=QSettings('tvok','tvok')
+cfg = QSettings('tvok','tvok')
 # Load playlist
 pl = []
 
@@ -46,11 +46,19 @@ class MainWindow(QMainWindow):
 		self.home = os.getenv("HOME")
 # vlc player init
 		self.instance = vlc.Instance('-q')
+#		self.instance = vlc.Instance('-q --network-caching=1000')
 		self.mediaplayer = self.instance.media_player_new()
-		self.mediaplayer.set_xwindow(self.winId())
+#		self.mediaplayer.set_xwindow(self.winId())
 # Main window settings    
-		self.widget = QWidget(self)
-		self.setCentralWidget(self.widget)
+		self.gridLayout = QGridLayout(self)
+		self.gridLayout.setObjectName("gridLayout")
+		self.videoFrame = QFrame(self)
+		self.videoFrame.setObjectName("videoFrame")
+		self.gridLayout.addWidget(self.videoFrame, 0, 0, 1, 1)
+
+		self.mediaplayer.set_xwindow(self.winId())
+#		self.mediaplayer.set_xwindow(self.videoFrame.winId())
+
 		self.setWindowIcon(QIcon(scriptDir+os.path.sep+'pics'+os.path.sep+'logo.png'))
 		self.resize(cfg.value('Width',456,type=int),cfg.value('Height',256,type=int))
 		self.setGeometry(cfg.value('Left',456,type=int)+WINDOW_DECORATION_WIDTH_BORDER,
@@ -78,6 +86,7 @@ class MainWindow(QMainWindow):
 		self.t1sec.start(1000)
 # Select channel saved previous run
 		self.chNum = cfg.value('Channel',1,type=int)
+		self.chPrev = self.chNum + 1
 		self.chChange()
 		
 		self.trayIcon = QSystemTrayIcon()
@@ -88,11 +97,24 @@ class MainWindow(QMainWindow):
 		self.selectChannel = ''
 		self.tChSelect = QTimer(self)
 		self.tChSelect.timeout.connect(self.tChSelectTimeout)
+		
+#		self.label = QLabel(self)
+#		self.label.setText("<font color='yellow'>TEST</font>")
+
+	def osdView(self,mess):
+# Send OSD
+# If DBUS daemon org.kochkin.okindd is running
+			dbus_interface = QDBusInterface("org.kochkin.okindd", "/Text")
+			if dbus_interface.isValid():
+				dbus_interface.call('printText', 'Tvok', mess, 5000)
 
 	@pyqtSlot(int)
 	def channelNum(self,digit):
 		if (digit >= 0) and (digit <= 9):
 			self.selectChannel = self.selectChannel+str(digit)
+			if int(self.selectChannel) > len(pl): self.selectChannel = self.selectChannel[:-1]
+			if int(self.selectChannel) < 1: self.selectChannel = self.selectChannel[:-1]
+			self.osdView(self.selectChannel+': '+pl[int(self.selectChannel)-1][0])
 			self.tChSelect.start(2000)
 
 	@pyqtSlot()
@@ -139,13 +161,11 @@ class MainWindow(QMainWindow):
 	@pyqtSlot()
 	def ChannelNext(self):
 		self.chNum += 1
-#		if self.chNum > len(pl): self.chNum = 0
 		self.chChange()
 		
 	@pyqtSlot()
 	def ChannelPrev(self):
 		self.chNum -= 1
-#		if self.chNum < 1: self.chNum = len(pl)
 		self.chChange()
 
 # On mouse wheel change    
@@ -158,17 +178,20 @@ class MainWindow(QMainWindow):
 
 # Stop current channel and start chNum channel
 	def chChange(self):
-		self.mediaplayer.stop()
-		if self.chNum > len(pl): self.chNum = 0
-		if self.chNum < 1: self.chNum = len(pl)
-#		if self.chNum > len(pl): self.chNum = len(pl)
-		self.setWindowTitle(str(self.chNum)+'. '+pl[self.chNum-1][0])
-		self.media = self.instance.media_new(pl[self.chNum-1][1])
-		self.mediaplayer.set_media(self.media)
-		playerError = self.mediaplayer.play()
-		if playerError != 0: sys.exit()
-		cfg.setValue('Channel',self.chNum)
-		cfg.setValue('Volume',self.mediaplayer.audio_get_volume())
+		if self.chNum != self.chPrev:
+			if self.chNum > len(pl): self.chNum = 1
+			if self.chNum < 1: self.chNum = len(pl)
+			self.setWindowTitle(str(self.chNum)+'. '+pl[self.chNum-1][0])
+			self.osdView(str(self.chNum)+': '+pl[self.chNum-1][0])
+			self.mediaplayer.stop()
+
+			self.media = self.instance.media_new(pl[self.chNum-1][1])
+			self.mediaplayer.set_media(self.media)
+			playerError = self.mediaplayer.play()
+			if playerError != 0: sys.exit()
+			cfg.setValue('Channel',self.chNum)
+			cfg.setValue('Volume',self.mediaplayer.audio_get_volume())
+			self.chPrev = self.chNum
 
 # If double click mouse - toggle full screen    
 	def mouseDoubleClickEvent(self,event): self.ToggleFullScreen()
@@ -220,9 +243,11 @@ class MainWindow(QMainWindow):
 		cfg.sync()
 		self.mediaplayer.audio_set_mute(self.AudioMuteOnStart)
 		self.mediaplayer.audio_set_volume(self.AudioVolumeOnStart)
-		self.trayIcon.close()
+#		self.trayIcon.close()
+		exit()
 		
 app = QApplication(sys.argv)
+# app.setQuitOnLastWindowClosed(True)
 tvok = MainWindow()
 tvok.createUI()
 tvok.show()
