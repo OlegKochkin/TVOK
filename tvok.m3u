@@ -1,19 +1,19 @@
 #EXTM3U
-#EXTINF:-1,Кино ТВ
-http://192.168.1.2:7777/udp/239.1.11.34:1234
-#EXTINF:-1,Кинопоказ
-http://192.168.1.2:7777/udp/239.1.10.9:1234
-#EXTINF:-1,НСТ
-http://192.168.1.2:7777/udp/239.1.11.37:1234
-#EXTINF:-1,Комедия
-http://192.168.1.2:7777/udp/239.1.9.24:1234
-#EXTINF:-1,ТВ 3 
-http://192.168.1.2:7777/rtp/238.1.1.34:1234
-#EXTINF:-1,Discovery Channel
-http://192.168.1.2:7777/rtp/238.1.1.129:1234
-#EXTINF:-1,Discovery Science
-http://192.168.1.2:7777/udp/239.1.11.2:1234
-#EXTINF:-1,National Geographic
-http://192.168.1.2:7777/udp/239.1.10.29:1234
-#EXTINF:-1 ,Animal Planet
-http://192.168.1.2:7777/rtp/238.1.1.131:1234
+#EXTINF:-1 tvg-id="mosfilm",Мосфильм. Золотая коллекция
+udp://@239.1.10.22:1234
+#EXTINF:-1 tvg-id="kino-tv",Кино ТВ
+udp://@239.1.11.34:1234
+#EXTINF:-1 tvg-id="kinopokaz",Кинопоказ
+udp://@239.1.10.9:1234
+#EXTINF:-1 tvg-id="nst",НСТ
+udp://@239.1.11.37:1234
+#EXTINF:-1 tvg-id="cinema-ru",Cinema
+udp://@239.1.10.8:1234
+#EXTINF:-1 tvg-id="ultra-hd-cinema",Ultra HD Cinema
+udp://@239.1.12.3:1234
+#EXTINF:-1 tvg-id="sony-turbo",.black
+udp://@239.1.11.7:1234
+#EXTINF:-1 tvg-id="blokbaster-hd",Блокбастер HD
+udp://@239.1.12.2:1234
+#EXTINF:-1 tvg-id="illuzion-plus",Иллюзион +
+udp://@239.1.9.39:1234
