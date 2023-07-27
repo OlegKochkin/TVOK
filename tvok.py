@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 # Simple IPTV player for sources in m3u files
-# TVOK. Version 0.6.2 (09.06.2023). By Oleg Kochkin. License GPL.
+# TVOK. Version 0.6.3 (27.07.2023). By Oleg Kochkin. License GPL.
 
 import sys, vlc, os, time, xml.etree.ElementTree as ET, datetime, textwrap
 from PyQt5.QtWidgets import QApplication,QWidget,QMainWindow,QMenu,QAction,QLabel,QSystemTrayIcon,QFrame,QGridLayout,QBoxLayout
@@ -74,12 +74,23 @@ class MainWindow(QMainWindow):
 		self.AudioVolumeOnStart = self.mediaplayer.audio_get_volume()
 		self.Volume = cfg.value('Volume',VOLUME_LEVEL,type=int)
 		self.EpgInMenu = cfg.value(os.path.basename(list)+'/EpgInMenu',False,type=bool)
+		self.EPG = ET.parse(scriptDir+os.path.sep+'epg.xml')
 
 # Registered DBUS service
 		DBUSName = 'tv.ok'
 		DBUSConn = QDBusConnection.connectToBus(QDBusConnection.SessionBus, DBUSName)
 		DBUSConn.registerService(DBUSName)
 		DBUSConn.registerObject("/", self, QDBusConnection.ExportAllContents)
+		
+		self.ChMenu = QMenu()
+		self.ChMenu.setToolTipsVisible(True)
+		self.ChMenu.setStyleSheet("font:14pt")
+		self.ChMenu.setToolTipDuration(1)
+		for chs in pl:
+			action = self.ChMenu.addAction(chs[0])
+		self.ChMenu.addSeparator()
+		self.quitAction = self.ChMenu.addAction(self.tr("Quit"))
+
 # Timer 1 second init. Once second call function t1secEvent
 		self.t1sec = QTimer(self)
 		self.t1sec.timeout.connect(self.t1secEvent)
@@ -90,9 +101,6 @@ class MainWindow(QMainWindow):
 # Select channel saved previous run
 		self.chNum = cfg.value(os.path.basename(list)+"/Channel",1,type=int)
 		self.chPrev = self.chNum + 1
-
-		self.EPG = ET.parse(scriptDir+os.path.sep+'epg.xml')
-
 		self.chChange()
 		
 		self.trayIcon = QSystemTrayIcon()
@@ -100,10 +108,15 @@ class MainWindow(QMainWindow):
 		self.trayIcon.activated.connect (self.ToggleMute)
 		self.swapIcon()
 		
-		self.selectChannel = ''
-		self.tChSelect = QTimer(self)
-		self.tChSelect.timeout.connect(self.tChSelectTimeout)
-		
+		self.tLongStartJob = QTimer(self)
+		self.tLongStartJob.timeout.connect(self.ChMenuToolTipRefresh)
+		self.tLongStartJob.start(1)
+
+	def ChMenuToolTipRefresh(self):
+		self.tLongStartJob.stop()
+		for index,chs in enumerate(pl):
+			self.ChMenu.actions()[index].setToolTip(chs[0]+'\n'+self.GetChannelProg(index))
+
 	def osdView(self,mess):
 # Send OSD
 # If DBUS daemon org.kochkin.okindd is running
@@ -119,13 +132,6 @@ class MainWindow(QMainWindow):
 			if int(self.selectChannel) < 1: self.selectChannel = self.selectChannel[:-1]
 			self.osdView(self.selectChannel+': '+pl[int(self.selectChannel)-1][0])
 			self.tChSelect.start(2000)
-
-	@pyqtSlot()
-	def tChSelectTimeout(self):
-		self.tChSelect.stop()
-		self.chNum = int (self.selectChannel)
-		self.selectChannel = ''
-		self.chChange()
 
 	def swapIcon(self):
 		picture = scriptDir+os.path.sep+'pics'+os.path.sep+'din-on.png'
@@ -188,6 +194,7 @@ class MainWindow(QMainWindow):
 			print(self.windowTitle()+" -> "+NewWindowTitle)
 			self.setWindowTitle(NewWindowTitle)
 			self.osdView(str(self.chNum)+': '+pl[self.chNum-1][0]+DelimOsd+textwrap.fill(ChPr,40))
+		self.ChMenuToolTipRefresh
 
 	@pyqtSlot()
 	def ToggleMute(self):
@@ -290,23 +297,8 @@ class MainWindow(QMainWindow):
 
 # Mouse pressed for context menu
 	def contextMenuEvent(self, event):
-		menu = QMenu(self)
-# Fill channels
-		index = 0
-		for chs in pl:
-			# if self.EpgInMenu:
-			# 	action = menu.addAction(chs[0]+" ["+textwrap.fill(self.GetChannelProg(index))+"]")
-			# else:
-			# 	action = menu.addAction(chs[0])
-			action = menu.addAction(chs[0])
-			if index == self.chNum-1:
-				menu.setActiveAction(action)
-#				print (index)
-			index += 1
-		
-		menu.addSeparator()
-		quitAction = menu.addAction(self.tr("Quit"))
-		action = menu.exec_(self.mapToGlobal(event.pos()))
+		self.CursorOn()
+		action = self.ChMenu.exec_(self.mapToGlobal(event.pos()))
 		if action: 
 			value_index=1
 			for value in pl:
@@ -316,7 +308,7 @@ class MainWindow(QMainWindow):
 						self.chChange()
 					break
 				else: value_index += 1
-			if action == quitAction:
+			if action == self.quitAction:
 				self.close()
 
 	def closeEvent(self, event):
