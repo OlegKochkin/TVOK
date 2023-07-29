@@ -3,7 +3,8 @@
 # Simple IPTV player for sources in m3u files
 # TVOK. Version 0.6.3 (27.07.2023). By Oleg Kochkin. License GPL.
 
-import sys, vlc, os, time, xml.etree.ElementTree as ET, datetime, textwrap
+import vlc
+import sys, os, time, xml.etree.ElementTree as ET, datetime, textwrap
 from PyQt5.QtWidgets import QApplication,QWidget,QMainWindow,QMenu,QAction,QLabel,QSystemTrayIcon,QFrame,QGridLayout,QBoxLayout
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import QSettings, Qt, pyqtSlot, QTimer
@@ -108,6 +109,10 @@ class MainWindow(QMainWindow):
 		self.trayIcon.activated.connect (self.ToggleMute)
 		self.swapIcon()
 		
+		self.selectChannel = ''
+		self.tChSelect = QTimer(self)
+		self.tChSelect.timeout.connect(self.tChSelectTimeout)
+
 		self.tLongStartJob = QTimer(self)
 		self.tLongStartJob.timeout.connect(self.ChMenuToolTipRefresh)
 		self.tLongStartJob.start(1)
@@ -132,6 +137,13 @@ class MainWindow(QMainWindow):
 			if int(self.selectChannel) < 1: self.selectChannel = self.selectChannel[:-1]
 			self.osdView(self.selectChannel+': '+pl[int(self.selectChannel)-1][0])
 			self.tChSelect.start(2000)
+
+	@pyqtSlot()
+	def tChSelectTimeout(self):
+		self.tChSelect.stop()
+		self.chNum = int (self.selectChannel)
+		self.selectChannel = ''
+		self.chChange()
 
 	def swapIcon(self):
 		picture = scriptDir+os.path.sep+'pics'+os.path.sep+'din-on.png'
@@ -194,7 +206,7 @@ class MainWindow(QMainWindow):
 			print(self.windowTitle()+" -> "+NewWindowTitle)
 			self.setWindowTitle(NewWindowTitle)
 			self.osdView(str(self.chNum)+': '+pl[self.chNum-1][0]+DelimOsd+textwrap.fill(ChPr,40))
-		self.ChMenuToolTipRefresh
+		self.tLongStartJob.start(1)
 
 	@pyqtSlot()
 	def ToggleMute(self):
